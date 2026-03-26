@@ -2,17 +2,20 @@ pipeline {
     agent any
 
     environment {
-        // Usamos o ID da credencial que criamos no Jenkins
+        // Credencial 'github-auth' deve estar com o ID correto no Jenkins (9090)
         GITHUB_AUTH = credentials('github-auth')
-        // Comando sincronizado com o binário v2.27.0 que instalamos
+        // Comando sincronizado com o binário v2.27.0
         DOCKER_COMPOSE = "docker compose"
     }
 
     stages {
         stage('🧼 Limpeza de Campo') {
             steps {
-                echo '🧼 Removendo ruídos de builds anteriores...'
-                sh "${DOCKER_COMPOSE} down --remove-orphans"
+                echo '🧼 Expulsando fantasmas e limpando volumes para evitar conflito de nomes...'
+                // O -v garante que volumes temporários não travem o próximo Gênesis
+                sh "${DOCKER_COMPOSE} down --remove-orphans -v"
+                // Limpeza manual de PIDs residuais no host (WSL)
+                sh "sudo rm -f motor_quantico/tmp/pids/server.pid || true"
             }
         }
 
@@ -20,13 +23,16 @@ pipeline {
             steps {
                 echo '🏗️ Erguendo o Motor Quântico (Python, Ruby, Go, Envoy)...'
                 sh "${DOCKER_COMPOSE} up -d --build"
+                
+                echo '⏳ Aguardando 15s para a Fenda Sináptica estabilizar (Ressonância)...'
+                sleep 15
             }
         }
 
         stage('🧪 Auditoria de Fase (Zeta 0.5)') {
             steps {
                 echo '🧪 Verificando se o Rails ancorou o Benzeno no pgvector...'
-                // O Jenkins entra no Rails e confirma se o AROM_001 existe no banco
+                // Valida se o registro AROM_001 colapsou no banco de dados
                 sh "docker exec rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
             }
         }
@@ -34,7 +40,7 @@ pipeline {
         stage('⚡ Teste de Alta Performance (Go-Worker)') {
             steps {
                 echo '⚡ Interrogando o Músculo (Go) na porta 8080...'
-                // Validamos se o Go entrega os vizinhos (E1u -> E2g)
+                // Verifica se a vizinhança de 0.5 (E1u) está sendo entregue
                 sh "curl -s http://localhost:8080/geometria/vizinhos | grep 'E1u'"
             }
         }
@@ -42,7 +48,7 @@ pipeline {
         stage('🌐 Prova de Conceito (Envoy HTTP/2)') {
             steps {
                 echo '🌐 Testando a Membrana Envoy na porta 10000...'
-                // A prova final: o duto binário HTTP/2 está aberto?
+                // A prova binária final: HTTP/2 está ativo no Envoy?
                 sh "curl -I --http2 -s http://localhost:10000/ | grep 'HTTP/2'"
             }
         }
@@ -54,6 +60,7 @@ pipeline {
         }
         failure {
             echo '🚨 [RUPTURA DE FASE] O sistema detectou uma inconsistência geométrica.'
+            // Extrai a 'Voz' do Rails para o log do Jenkins entender a queda
             sh "${DOCKER_COMPOSE} logs motor_quantico"
         }
     }

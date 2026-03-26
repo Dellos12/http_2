@@ -24,7 +24,7 @@ services:
       context: .
       dockerfile: ./motor_quantico/Dockerfile
     container_name: rails_governanca
-    # Bind em 0.0.0.0 para que Envoy e Jenkins 'escutem' o sinal
+    # Bind em 0.0.0.0 garante que o Envoy e Jenkins sintam o sinal do Zeta
     command: ./bin/rails server -b 0.0.0.0 -p 3000
     volumes:
       - ./motor_quantico:/rails
@@ -73,17 +73,8 @@ services:
     depends_on: [motor_quantico]
     networks: [fenda_sinaptica]
 
-  # 7. O OBSERVADOR: Auditor de Integridade (Jenkins)
-  jenkins:
-    build:
-      context: .
-      dockerfile: ./jenkins_config/Dockerfile # <-- Coordenada ajustada para a pasta correta
-    container_name: jenkins_auditor
-    ports: ["9090:8080"]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./jenkins_home:/var/jenkins_home
-    networks: [fenda_sinaptica]
+# O Jenkins foi removido daqui para evitar o erro de conflito de nome.
+# Ele agora atua como o Observador Externo na porta 9090.
 
 networks:
   fenda_sinaptica:
