@@ -28,13 +28,13 @@ services:
       context: .
       dockerfile: ./motor_quantico/Dockerfile
     container_name: rails_governanca
-    # A MUDANÇA CRUCIAL: Garantimos o ponto de partida do binário
+    # MUDANÇA: Usamos o caminho absoluto dentro do container
     working_dir: /rails
-    command: ./bin/rails server -b 0.0.0.0 -p 3000
+    command: /rails/bin/rails server -b 0.0.0.0 -p 3000
     volumes:
       - ./motor_quantico:/rails
       - /rails/node_modules
-      - /usr/local/bunble
+      - /usr/local/bundle
       - ./data:/rails/data
     ports: ["3000:3000"]
     depends_on:
