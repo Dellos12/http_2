@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+# 1. Sensor de Presença da Âncora (Postgres)
+# O loop 'until' garante que a sinapse só ocorra com o banco pronto
+echo "⏳ [Entrypoint] Aguardando a Âncora (Postgres:5432) estabilizar..."
+until pg_isready -h postgres -p 5432 -U devildev; do
+  sleep 1
+done
+
+# 2. O Colapso da Geometria (db:prepare)
+if [ -f "config/database.yml" ]; then
+  echo "🚀 [Entrypoint] Âncora detectada! Iniciando db:prepare..."
+  ./bin/rails db:prepare
+fi
+
+# 3. Limpeza de Impedância (PID antigo)
+rm -f /rails/tmp/pids/server.pid
+
+echo "✅ [Entrypoint] Sincronia estabelecida. Disparando o Motor Quântico..."
+exec "$@"
+

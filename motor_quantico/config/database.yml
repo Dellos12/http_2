@@ -1,0 +1,26 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # Forçamos o Rails a olhar para a rede, não para o próprio umbigo (Socket)
+  host: <%= ENV.fetch("DB_HOST") { "postgres" } %>
+  port: <%= ENV.fetch("DB_PORT") { 5432 } %>
+  username: <%= ENV.fetch("DB_USER") { "devildev" } %>
+  password: <%= ENV.fetch("DB_PASSWORD") { "password_quantica" } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # Timeout de 5s para evitar que a onda se perca no vácuo
+  connect_timeout: 5
+
+development:
+  <<: *default
+  database: hiperplano_db
+
+test:
+  <<: *default
+  database: motor_quantico_test
+
+# Produção consome a URL do Docker Compose, mas mantém o Host como âncora
+production:
+  <<: *default
+  url: <%= ENV['DATABASE_URL'] %>
+  database: hiperplano_db
+

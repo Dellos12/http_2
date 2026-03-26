@@ -1,0 +1,46 @@
+static_resources:
+  listeners:
+  - name: listener_http2
+    address:
+      socket_address: 
+        address: 0.0.0.0
+        port_value: 10000
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          http_protocol_options:
+            accept_http_10: true # Compatibilidade com HTTP/1.0
+          http2_protocol_options: {} # Ativa suporte ao protocolo binário HTTP/2
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match: 
+                  prefix: "/"
+                route: 
+                  cluster: rails_service
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+  - name: rails_service
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: rails_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: 
+                address: motor_quantico
+                port_value: 3000
+

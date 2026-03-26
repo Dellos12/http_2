@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package geometria;
+
+// Define onde o código gerado do Go ficará
+option go_package = "geometria-info/worker/pb";
+
+// O Serviço de Geometria da Informação
+service GeometriaService {
+  // Recebe um vetor e retorna a análise de curvatura/massa
+  rpc AnalisarEspaco (VetorInercial) returns (AnaliseInfo) {}
+}
+
+message VetorInercial {
+  string id = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
+  string contexto = 5; 
+}
+
+message AnaliseInfo {
+  double densidade = 1;
+  string status = 2;
+  string node_id = 3; // Importante para testar o Load Balance (quem processou?)
+}
+
