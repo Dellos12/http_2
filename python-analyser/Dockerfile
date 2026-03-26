@@ -13,7 +13,9 @@ WORKDIR /app
 # 2. Instalação do Kit de Sobrevivência (Usando o caminho do contexto raiz)
 COPY python-analyser/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install grpcio-tools 
+RUN pip install numpy==1.26.4
+RUN pip install mxnet>=1.9.1
+RUN pip install grpcio-tools polars
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 # 3. Gerar os stubs gRPC (Puxando da pasta shared na raiz)

@@ -5,24 +5,25 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 WORKDIR /rails
 
-# 1. Base: Receptor sináptico e Jemalloc
+# 1. Base: Adicionando o que o Rails 8 precisa para respirar
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client && \
+    apt-get install --no-install-recommends -y \
+    curl libjemalloc2 libvips postgresql-client libpq-dev build-essential && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
-ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
+# AJUSTE: Removemos o BUNDLE_DEPLOYMENT="1" para permitir flexibilidade no volume
+ENV RAILS_ENV="development" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
 # 2. Build Stage
 FROM base AS build
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips libyaml-dev node-gyp pkg-config python-is-python3 && \
+    apt-get install --no-install-recommends -y git libyaml-dev node-gyp pkg-config python-is-python3 && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Node/Yarn (Mantemos sua lógica que está correta)
 ARG NODE_VERSION=20.11.1
 ARG YARN_VERSION=latest
 ENV PATH=/usr/local/node/bin:$PATH
@@ -31,4 +32,9 @@ RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz
     rm -rf /tmp/node-build-master
 RUN corepack enable && yarn set version $YARN_VERSION
 
-COPY motor_quantico/Gemfile motor_quantico/G
+# CÓPIA DAS GEMS: O ponto de colapso
+COPY motor_quantico/Gemfile motor_quantico/Gemfile.lock ./
+# Rodamos o bundle sem o --deployment para que ele aceite o volume do Compose
+RUN bundle install
+
+# ... (Restante do seu COPY motor_quantico/ . e Assets)
