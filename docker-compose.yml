@@ -44,6 +44,7 @@ services:
         condition: service_started
     environment:
       - RAILS_ENV=development
+      - POLARS_SKIP_CPU_CHECK=1 # <-- Garante o Rails/Ruby
       - DB_HOST=postgres
       - DB_USER=devildev
       - DB_PASSWORD=password_quantica
@@ -70,22 +71,8 @@ services:
     container_name: python_expert
     volumes:
       - ./data:/app/data
+    environment:
+      - POLARS_SKIP_CPU_CHECK=1 # <-- Garante o Especialista Python
     networks: [fenda_sinaptica]
 
-  # 6. A FENDA SINÁPTICA: Proxy e Terminador HTTP/2 (Envoy)
-  envoy:
-    build:
-      context: .
-      dockerfile: ./envoy/Dockerfile
-    container_name: envoy_proxy
-    ports: ["10000:10000"]
-    volumes:
-      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
-    depends_on: [motor_quantico]
-    networks: [fenda_sinaptica]
-
-# --- A AMARRA DE REDE (O QUE ESTAVA FALTANDO) ---
-networks:
-  fenda_sinaptica:
-    driver: bridge
 
