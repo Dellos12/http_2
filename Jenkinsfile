@@ -12,20 +12,16 @@ pipeline {
         stage('🧼 Limpeza de Campo') {
             steps {
                 echo '🧼 Expulsando fantasmas para garantir exclusividade de nomes...'
-                // Remove pelo nome exato. O '|| true' evita que o build pare se o container não existir.
                 sh 'docker rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_expert || true'
-                // Derruba o compose e limpa volumes residuais
                 sh "${DOCKER_COMPOSE} down --remove-orphans -v"
             }
         }
 
         stage('🏗️ Construção da Malha') {
             steps {
-                echo '🏗️ Erguendo o Motor Quântico (Python, Ruby, Go, Envoy)...'
                 sh "${DOCKER_COMPOSE} up -d --build"
-                
-                echo '⏳ Aguardando 15s para a Fenda Sináptica estabilizar (Ressonância)...'
-                sleep 15
+                echo '⏳ Aguardando a Âncora e o Motor estabilizarem (30s)...'
+                sleep 30
             }
         }
 
@@ -53,7 +49,6 @@ pipeline {
         stage('⚡ Auditoria de Carga') {
             steps {
                 echo '🚀 Testando o escoamento de vetores via Envoy (Porta 10000)...'
-                // O Jenkins simula 100 requisições simultâneas via HTTP/2
                 sh "ab -n 100 -c 10 -H 'Connection: Upgrade' -H 'Upgrade: h2c' http://localhost:10000/"
             }
         }

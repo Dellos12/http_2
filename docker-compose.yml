@@ -9,6 +9,12 @@ services:
       POSTGRES_DB: hiperplano_db
       POSTGRES_USER: devildev
       POSTGRES_PASSWORD: password_quantica
+    # --- O SENSOR DE SAÚDE ---
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devildev -d hiperplano_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks: [fenda_sinaptica]
 
   # 2. O POTENCIAL: Repouso e Telemetria (Redis)
@@ -24,13 +30,16 @@ services:
       context: .
       dockerfile: ./motor_quantico/Dockerfile
     container_name: rails_governanca
-    # Bind em 0.0.0.0 garante que o Envoy e Jenkins sintam o sinal do Zeta
     command: ./bin/rails server -b 0.0.0.0 -p 3000
     volumes:
       - ./motor_quantico:/rails
       - ./data:/rails/data
     ports: ["3000:3000"]
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres:
+        condition: service_healthy # O Rails só sobe quando o Postgres der OK
+      redis:
+        condition: service_started
     environment:
       - RAILS_ENV=development
       - DB_HOST=postgres
