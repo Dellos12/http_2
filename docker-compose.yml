@@ -74,5 +74,7 @@ services:
     environment:
       - POLARS_SKIP_CPU_CHECK=1 # <-- Garante o Especialista Python
     networks: [fenda_sinaptica]
+      fenda_sinaptica:
+        driver: bridge
 
 
