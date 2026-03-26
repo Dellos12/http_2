@@ -1,9 +1,10 @@
 services:
-  # 1. A ÂNCORA: Memória Física (Postgres + pgvector)
+  # 1. A ÂNCORA: Memória física (Postgres + pgvector)
   postgres:
     image: ankane/pgvector:latest
     container_name: postgres_hiperplano
-    ports: ["5432:5432"]
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: hiperplano_db
       POSTGRES_USER: devildev
@@ -13,30 +14,33 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks: [fenda_sinaptica]
+    networks:
+      - fenda_sinaptica
 
-  # 2. O POTENCIAL: Repouso e Telemetria (Redis)
+  # 2. O POTENCIAL: Repouso e telemetria (Redis)
   redis:
     image: redis:alpine
     container_name: redis_frequencia
-    ports: ["6379:6379"]
-    networks: [fenda_sinaptica]
+    ports:
+      - "6379:6379"
+    networks:
+      - fenda_sinaptica
 
-  # 3. O GOVERNADOR: Motor Quântico (Ruby on Rails)
+  # 3. O GOVERNADOR: Motor quântico (Ruby on Rails)
   motor_quantico:
-    build: 
+    build:
       context: .
-      dockerfile: ./motor_quantico/Dockerfile
+      dockerfile: ./motor_quantico/dockerfile
     container_name: rails_governanca
     working_dir: /rails
-    # Usamos o bundle exec para garantir que o Rails encontre o binário no PATH
     command: bundle exec rails server -b 0.0.0.0 -p 3000
     volumes:
       - ./motor_quantico:/rails
       - /rails/node_modules
       - /usr/local/bundle
       - ./data:/rails/data
-    ports: ["3000:3000"]
+    ports:
+      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,37 +48,45 @@ services:
         condition: service_started
     environment:
       - RAILS_ENV=development
-      - POLARS_SKIP_CPU_CHECK=1 # <-- Garante o Rails/Ruby
+      - POLARS_SKIP_CPU_CHECK=1
       - DB_HOST=postgres
       - DB_USER=devildev
       - DB_PASSWORD=password_quantica
-      - DATABASE_URL=postgres://devildev:password_quantica@postgres:5432/hiperplano_db
-    networks: [fenda_sinaptica]
+      - DATABASE_URL=postgresql://devildev:password_quantica@postgres:5432/hiperplano_db
+    networks:
+      - fenda_sinaptica
 
-  # 4. O MÚSCULO: Entrega em Alta Performance (Go)
+  # 4. O MÚSCULO: Entrega em alta performance (Go)
   go_worker:
     build:
       context: .
-      dockerfile: ./go-worker/Dockerfile
+      dockerfile: ./go-worker/dockerfile
     container_name: go_entrega
-    ports: ["8080:8080"]
-    depends_on: [postgres]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
     environment:
       - DB_URL=postgres://devildev:password_quantica@postgres:5432/hiperplano_db?sslmode=disable
-    networks: [fenda_sinaptica]
+    networks:
+      - fenda_sinaptica
 
-  # 5. O ANALISADOR: Especialista de Fase (Python + MXNet)
+  # 5. O ANALISADOR: Especialista de fase (Python + MXNet)
   python_analyser:
     build:
       context: .
-      dockerfile: ./python-analyser/Dockerfile
-    container_name: python_expert
-    volumes:
-      - ./data:/app/data
+      dockerfile: ./python_analyser/dockerfile # Certifique-se que o caminho está correto
+    container_name: python_especialista
+    depends_on:
+      - postgres
+      - redis
     environment:
-      - POLARS_SKIP_CPU_CHECK=1 # <-- Garante o Especialista Python
-    networks: [fenda_sinaptica]
-      fenda_sinaptica:
-        driver: bridge
+      - DATABASE_URL=postgresql://devildev:password_quantica@postgres:5432/hiperplano_db
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - fenda_sinaptica
 
+networks:
+  fenda_sinaptica:
+    driver: bridge
 
