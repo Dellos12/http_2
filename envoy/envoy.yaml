@@ -43,4 +43,11 @@ static_resources:
               socket_address: 
                 address: motor_quantico
                 port_value: 3000
+    health_checks:
+      - timeout: 1s
+        interval: 5s
+        unhealthy_threshold: 2
+        healthy_threshold: 2
+        http_health_check:
+          path: "/up" # Rota de saúde padrão do Rails 7/8
 

@@ -11,9 +11,10 @@ pipeline {
     stages {
         stage('🧼 Limpeza de Campo') {
             steps {
-                echo '🧼 Expulsando fantasmas pelo nome (Garantia de Identidade)...'
-                // Remove pelo nome exato para garantir que o 'Conflict' não ocorra
-                sh 'docker rm -f python_expert postgres_hiperplano redis_frequencia rails_governanca go_entrega envoy_proxy || true'
+                echo '🧼 Expulsando fantasmas para garantir exclusividade de nomes...'
+                // Remove pelo nome exato. O '|| true' evita que o build pare se o container não existir.
+                sh 'docker rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_expert || true'
+                // Derruba o compose e limpa volumes residuais
                 sh "${DOCKER_COMPOSE} down --remove-orphans -v"
             }
         }
@@ -48,6 +49,14 @@ pipeline {
                 sh "curl -I --http2 -s http://localhost:10000/ | grep 'HTTP/2'"
             }
         }
+
+        stage('⚡ Auditoria de Carga') {
+            steps {
+                echo '🚀 Testando o escoamento de vetores via Envoy (Porta 10000)...'
+                // O Jenkins simula 100 requisições simultâneas via HTTP/2
+                sh "ab -n 100 -c 10 -H 'Connection: Upgrade' -H 'Upgrade: h2c' http://localhost:10000/"
+            }
+        }
     }
 
     post {
@@ -60,6 +69,4 @@ pipeline {
         }
     }
 }
-
-
 
