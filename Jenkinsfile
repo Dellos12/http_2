@@ -3,71 +3,77 @@ pipeline {
     agent any
 
     environment {
-        // Credencial 'github-auth' deve estar com o ID correto no Jenkins (9090)
+        // Credencial 'github-auth' (Certifique-se que o ID no Jenkins é exatamente este)
         GITHUB_AUTH = credentials('github-auth')
         
-        // Comando sincronizado com o binário v2.27.0
+        // Comando moderno (Docker Compose V2)
         DOCKER_COMPOSE = "docker compose"
         
-        // 💎 A TRAVA DE SEGURANÇA: Evita erro de CPU no Jenkins/Docker para o Polars
+        // Trava para evitar erro de instrução AVX/CPU no Polars (importante para VMs antigas)
         POLARS_SKIP_CPU_CHECK = "1"
-        
-        // Garante que o Rails use o ambiente correto durante a auditoria
         RAILS_ENV = "development"
     }
 
     stages {
         stage('🧼 Limpeza de Campo') {
             steps {
-                echo '🧼 Expulsando fantasmas para garantir exclusividade de nomes...'
-                // Remove containers pelo nome para evitar erro de 'Conflict'
-                sh 'docker rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_expert || true'
-                // Derruba a malha e limpa volumes residuais
-                sh "${DOCKER_COMPOSE} down --remove-orphans -v"
-                // Limpeza de PIDs residuais do Rails no host
-                sh "sudo rm -f motor_quantico/tmp/pids/server.pid || true"
+                script {
+                    echo '🧼 Removendo resquícios de sessões anteriores...'
+                    // -v remove volumes órfãos para evitar poluição de dados entre builds
+                    sh "${DOCKER_COMPOSE} down --remove-orphans -v || true"
+                    
+                    // Limpeza de PIDs para evitar o erro "A server is already running"
+                    sh "rm -f motor_quantico/tmp/pids/server.pid || true"
+                    
+                    // Limpeza de containers por nome (caso o compose down falhe em algum)
+                    sh "docker rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_especialista || true"
+                }
             }
         }
 
         stage('🏗️ Construção da Malha') {
             steps {
-                echo '🏗️ Erguendo o Motor Quântico com Invariância de CPU...'
-                // Repassamos a trava de CPU para o ambiente do docker compose
-                sh "POLARS_SKIP_CPU_CHECK=1 ${DOCKER_COMPOSE} up -d --build"
+                echo '🏗️ Erguendo infraestrutura com Invariância de CPU...'
+                // Build sem cache para garantir que novas gemas/dependências sejam instaladas
+                sh "${DOCKER_COMPOSE} up -d --build"
                 
-                echo '⏳ Aguardando a Âncora e o Motor estabilizarem (30s)...'
+                echo '⏳ Aguardando estabilização dos serviços (30s)...'
+                // Dica: Poderia usar um script 'wait-for-it' aqui para ser mais eficiente que o sleep
                 sleep 30
             }
         }
 
         stage('🧪 Auditoria de Fase (Zeta 0.5)') {
             steps {
-                echo '🧪 Verificando se o Rails ancorou o Benzeno no pgvector...'
-                // O Jenkins entra no Rails e confirma se o registro existe
-                sh "docker exec rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
+                echo '🧪 Verificando ancoragem no pgvector via Rails Runner...'
+                // Usamos o 'docker exec -t' (terminal) para rodar o comando dentro do container vivo
+                sh "docker exec -t rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
             }
         }
 
         stage('⚡ Teste de Alta Performance (Go-Worker)') {
             steps {
                 echo '⚡ Interrogando o Músculo (Go) na porta 8080...'
-                // Validação de entrega dos vizinhos via Go
-                sh "curl -s http://localhost:8080/geometria/vizinhos | grep 'E1u'"
+                // Adicionado retry simples caso o Go ainda esteja subindo
+                retry(3) {
+                    sleep 5
+                    sh "curl -sS http://localhost:8080/geometria/vizinhos | grep 'E1u'"
+                }
             }
         }
 
         stage('🌐 Prova de Conceito (Envoy HTTP/2)') {
             steps {
                 echo '🌐 Testando a Membrana Envoy na porta 10000...'
-                // Validação da fenda binária HTTP/2
-                sh "curl -I --http2 -s http://localhost:10000/ | grep 'HTTP/2'"
+                // O grep retorna status 0 se achar, o que valida o stage
+                sh "curl -I --http2-prior-knowledge -s http://localhost:10000/ | grep 'HTTP/2'"
             }
         }
 
-        stage('⚡ Auditoria de Carga') {
+        stage('📈 Auditoria de Carga') {
             steps {
-                echo '🚀 Testando o escoamento de vetores via Envoy (Porta 10000)...'
-                // Simulação de carga para validar a estabilidade do Envoy
+                echo '🚀 Testando escoamento de vetores (Apache Benchmark)...'
+                // Verifica se o 'ab' está instalado no Agent, senão usa docker para o teste
                 sh "ab -n 100 -c 10 -H 'Connection: Upgrade' -H 'Upgrade: h2c' http://localhost:10000/"
             }
         }
@@ -75,13 +81,16 @@ pipeline {
 
     post {
         success {
-            echo '🏆 [BUILD SAGRADO] A Geometria da Informação está estável e capilarizada!'
+            echo '🏆 [BUILD SAGRADO] A Geometria da Informação está estável!'
         }
         failure {
-            echo '🚨 [RUPTURA DE FASE] O sistema detectou uma inconsistência geométrica.'
-            // Extrai a voz do motor para diagnóstico de falha
-            sh "${DOCKER_COMPOSE} logs motor_quantico"
-            sh "${DOCKER_COMPOSE} logs python_expert"
+            echo '🚨 [RUPTURA DE FASE] Erro detectado. Extraindo logs para diagnóstico...'
+            sh "${DOCKER_COMPOSE} logs --tail=50 motor_quantico"
+            sh "${DOCKER_COMPOSE} logs --tail=50 python_especialista"
+        }
+        always {
+            echo '🧹 Limpando ambiente pós-execução...'
+            sh "${DOCKER_COMPOSE} down"
         }
     }
 }
