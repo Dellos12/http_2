@@ -31,37 +31,4 @@ RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz
     rm -rf /tmp/node-build-master
 RUN corepack enable && yarn set version $YARN_VERSION
 
-COPY motor_quantico/Gemfile motor_quantico/Gemfile.lock ./
-RUN bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
-    bundle exec bootsnap precompile -j 1 --gemfile
-
-COPY motor_quantico/package.json motor_quantico/yarn.lock ./
-RUN yarn install --immutable
-
-COPY motor_quantico/ .
-RUN bundle exec bootsnap precompile -j 1 app/ lib/
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
-RUN rm -rf node_modules
-
-# 3. Final Stage: Colapso do Corpo
-FROM base
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
-
-COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
-COPY --chown=rails:rails --from=build /rails /rails
-
-# --- A SEÇÃO DE IGNIÇÃO (MUDANÇA DE COORDENADA) ---
-# Copiamos para /usr/bin/ para ficar FORA do volume montado em /rails
-COPY motor_quantico/bin/docker-entrypoint /usr/bin/docker-entrypoint
-RUN chmod +x /usr/bin/docker-entrypoint
-
-USER 1000:1000
-
-# Aponta para a nova coordenada absoluta
-ENTRYPOINT ["/usr/bin/docker-entrypoint"]
-EXPOSE 3000
-
-# Bind 0.0.0.0 para visibilidade do Envoy na fenda sináptica
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+COPY motor_quantico/Gemfile motor_quantico/G
