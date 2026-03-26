@@ -11,11 +11,10 @@ pipeline {
     stages {
         stage('🧼 Limpeza de Campo') {
             steps {
-                echo '🧼 Expulsando fantasmas e limpando volumes para evitar conflito de nomes...'
-                // O -v garante que volumes temporários não travem o próximo Gênesis
+                echo '🧼 Expulsando fantasmas pelo nome (Garantia de Identidade)...'
+                // Remove pelo nome exato para garantir que o 'Conflict' não ocorra
+                sh 'docker rm -f python_expert postgres_hiperplano redis_frequencia rails_governanca go_entrega envoy_proxy || true'
                 sh "${DOCKER_COMPOSE} down --remove-orphans -v"
-                // Limpeza manual de PIDs residuais no host (WSL)
-                sh "sudo rm -f motor_quantico/tmp/pids/server.pid || true"
             }
         }
 
@@ -32,7 +31,6 @@ pipeline {
         stage('🧪 Auditoria de Fase (Zeta 0.5)') {
             steps {
                 echo '🧪 Verificando se o Rails ancorou o Benzeno no pgvector...'
-                // Valida se o registro AROM_001 colapsou no banco de dados
                 sh "docker exec rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
             }
         }
@@ -40,7 +38,6 @@ pipeline {
         stage('⚡ Teste de Alta Performance (Go-Worker)') {
             steps {
                 echo '⚡ Interrogando o Músculo (Go) na porta 8080...'
-                // Verifica se a vizinhança de 0.5 (E1u) está sendo entregue
                 sh "curl -s http://localhost:8080/geometria/vizinhos | grep 'E1u'"
             }
         }
@@ -48,7 +45,6 @@ pipeline {
         stage('🌐 Prova de Conceito (Envoy HTTP/2)') {
             steps {
                 echo '🌐 Testando a Membrana Envoy na porta 10000...'
-                // A prova binária final: HTTP/2 está ativo no Envoy?
                 sh "curl -I --http2 -s http://localhost:10000/ | grep 'HTTP/2'"
             }
         }
@@ -60,9 +56,10 @@ pipeline {
         }
         failure {
             echo '🚨 [RUPTURA DE FASE] O sistema detectou uma inconsistência geométrica.'
-            // Extrai a 'Voz' do Rails para o log do Jenkins entender a queda
             sh "${DOCKER_COMPOSE} logs motor_quantico"
         }
     }
 }
+
+
 
