@@ -5,8 +5,10 @@ pipeline {
         // Credencial 'github-auth' (Certifique-se que o ID no Jenkins é exatamente este)
         GITHUB_AUTH = credentials('github-auth')
         
-        // Comando moderno (Docker Compose V2)
-        DOCKER_COMPOSE = "docker compose"
+        // 💎 A CURA: Usamos o caminho absoluto que você confirmou no WSL
+        DOCKER_BIN = "/usr/bin/docker"
+        // No Docker moderno (V2), o compose é um subcomando do docker
+        DOCKER_COMPOSE = "/usr/bin/docker compose"
         
         // Trava para evitar erro de instrução AVX/CPU no Polars
         POLARS_SKIP_CPU_CHECK = "1"
@@ -18,8 +20,8 @@ pipeline {
             steps {
                 script {
                     echo '🧼 Expulsando fantasmas e limpando volumes...'
-                    // Remove containers pelos nomes exatos definidos no docker-compose.yml
-                    sh "docker rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_especialista || true"
+                    // Usamos a variável DOCKER_BIN para garantir a autoridade do comando
+                    sh "${DOCKER_BIN} rm -f redis_frequencia postgres_hiperplano rails_governanca go_entrega envoy_proxy python_especialista || true"
                     
                     // -v remove volumes órfãos para evitar poluição de dados
                     sh "${DOCKER_COMPOSE} down --remove-orphans -v || true"
@@ -45,7 +47,7 @@ pipeline {
             steps {
                 echo '🧪 Verificando ancoragem no pgvector via Rails Runner...'
                 // O docker exec interroga o container vivo 'rails_governanca'
-                sh "docker exec -t rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
+                sh "${DOCKER_BIN} exec -t rails_governanca bin/rails runner 'puts Simulation.where(substantivo: \"AROM_001\").exists?'"
             }
         }
 
@@ -84,7 +86,6 @@ pipeline {
         failure {
             echo '🚨 [RUPTURA DE FASE] Erro detectado. Extraindo logs para diagnóstico...'
             sh "${DOCKER_COMPOSE} logs --tail=50 motor_quantico"
-            // Sincronizado com o nome do serviço no docker-compose.yml
             sh "${DOCKER_COMPOSE} logs --tail=50 python_analyser" 
         }
     }
