@@ -1,3 +1,4 @@
+
 services:
   # 1. A ÂNCORA: Memória Física (Postgres + pgvector)
   postgres:
@@ -23,7 +24,7 @@ services:
       context: .
       dockerfile: ./motor_quantico/Dockerfile
     container_name: rails_governanca
-    # FORÇA O BIND EM 0.0.0.0 para o Envoy e Jenkins enxergarem
+    # Bind em 0.0.0.0 para que Envoy e Jenkins 'escutem' o sinal
     command: ./bin/rails server -b 0.0.0.0 -p 3000
     volumes:
       - ./motor_quantico:/rails
@@ -66,8 +67,7 @@ services:
       context: .
       dockerfile: ./envoy/Dockerfile
     container_name: envoy_proxy
-    ports:
-      - "10000:10000"
+    ports: ["10000:10000"]
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml
     depends_on: [motor_quantico]
@@ -77,10 +77,9 @@ services:
   jenkins:
     build:
       context: .
-      dockerfile: ./jenkinsfile/Dockerfile
+      dockerfile: ./jenkins_config/Dockerfile # <-- Coordenada ajustada para a pasta correta
     container_name: jenkins_auditor
-    ports:
-      - "9090:8080" # Sua porta de costume
+    ports: ["9090:8080"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./jenkins_home:/var/jenkins_home
@@ -89,4 +88,3 @@ services:
 networks:
   fenda_sinaptica:
     driver: bridge
-
